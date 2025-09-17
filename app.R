@@ -1,3 +1,4 @@
+# ---- Libraries ----
 library(shiny)
 library(ggplot2)
 library(dplyr)
@@ -7,10 +8,8 @@ library(tidyr)
 generate_population <- function(n_fish = 40, n_jelly = 40, n_whale = 5, n_turtle = 30) {
 	set.seed(1234)
 	
-	# total counts
 	n_total <- n_fish + n_jelly + n_whale + n_turtle
 	
-	# species vector
 	species <- c(
 		rep("Fish", n_fish),
 		rep("Jellyfish", n_jelly),
@@ -18,20 +17,14 @@ generate_population <- function(n_fish = 40, n_jelly = 40, n_whale = 5, n_turtle
 		rep("Turtle", n_turtle)
 	)
 	
-	# x coordinates (all the same range)
 	x <- runif(n_total, 0.2, 9.8)
-	
-	# y coordinates (special case for whales)
 	y <- runif(n_total, 0.2, 9.8)
-	y[species == "Whale"] <- runif(n_whale, 0.2, 4)   # restrict whales
 	
-	data.frame(
-		species = species,
-		x = x,
-		y = y
-	)
+	# whales only appear in top portion
+	y[species == "Whale"] <- runif(n_whale, 0.2, 4)
+	
+	data.frame(species = species, x = x, y = y)
 }
-
 
 # ---- Emoji mapping ----
 emoji_map <- c(
@@ -48,13 +41,11 @@ ui <- fluidPage(
 			selectInput("sample_type", "Sampling Type:",
 									choices = c("SRS", "Stratified", "Cluster", "Convenience")),
 			
-			# Dynamic UI for slider or cluster number
 			uiOutput("sampling_options"),
 			
 			actionButton("draw_sample", "SAMPLE", class = "btn-primary btn-lg"),
 			br(), br(),
 			
-			# Description
 			HTML("
 Imagine you are acting as a data scientist working with a marine biologist to study sea creatures! 🐠🪼🐋🐢<br><br>
 Your goal is to collect a sample of sea creatures and see how well it represents the full population.<br><br>
@@ -67,24 +58,22 @@ Adjust the sample size or number of clusters, select a sampling method, and clic
 ")
 		),
 		
-        
-        mainPanel(
-          plotOutput("oceanPlot", height = "600px"),
-          br(),
-          plotOutput("barPlot", height = "300px"),
-          br(),
-          p(style = "font-size:10pt;",
-            "Author: Katie Burak | ",
-            a("GitHub Repository", href="https://github.com/katieburak/sampling-shiny-app", target="_blank")
-          ),
-          p(style = "font-size:10pt;",
-            "Acknowledgement: Inspired by ",
-            a("https://utrecht-university.shinyapps.io/cj_shiny_sampling/",
-              href="https://utrecht-university.shinyapps.io/cj_shiny_sampling/",
-              target="_blank")
-          )
-        )
-
+		mainPanel(
+			plotOutput("oceanPlot", height = "600px"),
+			br(),
+			plotOutput("barPlot", height = "300px"),
+			br(),
+			p(style = "font-size:10pt;",
+				"Author: Katie Burak | ",
+				a("GitHub Repository", href="https://github.com/katieburak/sampling-shiny-app", target="_blank")
+			),
+			p(style = "font-size:10pt;",
+				"Acknowledgement: Inspired by ",
+				a("https://utrecht-university.shinyapps.io/cj_shiny_sampling/",
+					href="https://utrecht-university.shinyapps.io/cj_shiny_sampling/",
+					target="_blank")
+			)
+		)
 	)
 )
 
@@ -120,14 +109,10 @@ server <- function(input, output, session) {
 			
 		} else if (type == "Cluster") {
 			n_clusters <- as.numeric(input$n_clusters)
-			
-			# assign clusters (quadrants)
 			population$cluster <- with(population,
 																 paste(ifelse(x <= 5, "Left", "Right"),
 																 			ifelse(y <= 5, "Bottom", "Top")))
 			clusters <- unique(population$cluster)
-			
-			# select clusters
 			selected_clusters <- sample(clusters, n_clusters)
 			population |> filter(cluster %in% selected_clusters)
 			
@@ -141,7 +126,7 @@ server <- function(input, output, session) {
 	# ---- Ocean plot ----
 	output$oceanPlot <- renderPlot({
 		
-		# Wavy ocean top
+		# wave top
 		wave_x <- seq(0, 10, length.out = 200)
 		wave_y <- 12.3 + 0.5*sin(wave_x * pi)
 		ocean_poly <- data.frame(
@@ -149,43 +134,40 @@ server <- function(input, output, session) {
 			y = c(0, wave_y, 0)
 		)
 		
+		# base plot
 		p <- ggplot(population, aes(x=x, y=y)) +
-			geom_polygon(data=ocean_poly, aes(x=x, y=y), fill="lightblue", color=NA, alpha=0.5) +
-			geom_text(aes(label = emoji_map[species]), size=6, alpha = 0.3) +
+			geom_polygon(data=ocean_poly, aes(x=x, y=y),
+									 fill="lightblue", color=NA, alpha=0.5, inherit.aes = FALSE) +
+			geom_text(aes(label = emoji_map[species]), size=8, alpha = 0.3) +
 			theme_minimal() +
 			theme(panel.background = element_rect(fill = "white"),
 						panel.grid = element_blank(),
 						axis.title = element_blank(),
 						axis.text = element_blank(),
-						axis.ticks = element_blank(),
-						legend.text = element_text(size=14),
-						legend.title = element_blank()) +
+						axis.ticks = element_blank()) +
 			xlim(0,10) + ylim(0,13)
 		
-		# Overlay sampled points
+		# Overlay sampled points with navy circles
 		if (input$draw_sample > 0) {
 			s <- sampled()
 			if (!is.null(s) && nrow(s) > 0) {
-				p <- p + geom_text(data=s, aes(label = emoji_map[species]), size=14)
-			}
-			
-			# Cluster quadrant highlighting
-			if (input$sample_type == "Cluster") {
-				population$cluster <- with(population,
-																	 paste(ifelse(x <= 5, "Left", "Right"),
-																	 			ifelse(y <= 5, "Bottom", "Top")))
-				selected_clusters <- unique(s$cluster)
+				# Draw navy circles behind emojis
+				p <- p + geom_point(
+					data = s,
+					aes(x = x, y = y),
+					shape = 21,
+					size = 12,
+					stroke = 1.5,
+					color = "navy",
+					fill = NA
+				)
 				
-				for (cl in selected_clusters) {
-					p <- p + geom_vline(xintercept = 5, linetype="dashed") +
-						geom_hline(yintercept = 5, linetype="dashed")
-				}
-			}
-			
-			# Convenience line
-			if (input$sample_type == "Convenience") {
-				cutoff <- 7
-				p <- p + geom_hline(yintercept = cutoff, linetype="dashed", color="black")
+				# Draw sampled emojis on top
+				p <- p + geom_text(
+					data = s,
+					aes(label = emoji_map[species]),
+					size = 8
+				)
 			}
 		}
 		
@@ -206,10 +188,7 @@ server <- function(input, output, session) {
 			count(species) |>
 			mutate(type="Sample")
 		
-		combined <- bind_rows(population_counts, sample_counts)
-		
-		# Combine emoji and species name
-		combined <- combined |>
+		combined <- bind_rows(population_counts, sample_counts) |>
 			mutate(species_label = paste0(emoji_map[species], " ", species))
 		
 		ggplot(combined, aes(x = species_label, y = n, fill = type)) +
@@ -223,9 +202,7 @@ server <- function(input, output, session) {
 				legend.title = element_blank()
 			) +
 			scale_fill_manual(values = c("Population" = "#00C5CD", "Sample" = "#EEAEEE"))
-
 	})
-	
 }
 
 # ---- Run App ----
