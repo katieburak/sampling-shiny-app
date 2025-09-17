@@ -4,28 +4,34 @@ library(dplyr)
 library(tidyr)
 
 # ---- Population generation ----
-set.seed(200200)
 generate_population <- function(n_fish = 40, n_jelly = 40, n_whale = 5, n_turtle = 30) {
+	set.seed(1234)
 	
-	depth_fish <- runif(n_fish, 0, 10)  
-	depth_jelly <- runif(n_jelly, 0, 10)
-	depth_whale <- runif(n_whale, 0, 6.9)
-	depth_turtle <- runif(n_turtle, 0, 10)
+	# total counts
+	n_total <- n_fish + n_jelly + n_whale + n_turtle
 	
-	depth_all <- c(depth_fish, depth_jelly, depth_whale, depth_turtle)
+	# species vector
+	species <- c(
+		rep("Fish", n_fish),
+		rep("Jellyfish", n_jelly),
+		rep("Whale", n_whale),
+		rep("Turtle", n_turtle)
+	)
+	
+	# x coordinates (all the same range)
+	x <- runif(n_total, 0.2, 9.8)
+	
+	# y coordinates (special case for whales)
+	y <- runif(n_total, 0.2, 9.8)
+	y[species == "Whale"] <- runif(n_whale, 0.2, 4)   # restrict whales
 	
 	data.frame(
-		species = c(
-			rep("Fish", n_fish),
-			rep("Jellyfish", n_jelly),
-			rep("Whale", n_whale),
-			rep("Turtle", n_turtle)
-		),
-		x = runif(n_fish + n_jelly + n_whale + n_turtle, 0, 10),
-		y = runif(n_fish + n_jelly + n_whale + n_turtle, 0, 10),
-		depth = depth_all
+		species = species,
+		x = x,
+		y = y
 	)
 }
+
 
 # ---- Emoji mapping ----
 emoji_map <- c(
