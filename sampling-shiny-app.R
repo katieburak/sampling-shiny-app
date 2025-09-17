@@ -64,7 +64,12 @@ Adjust the sample size or number of clusters, select a sampling method, and clic
 		mainPanel(
 			plotOutput("oceanPlot", height = "600px"),
 			br(),
-			plotOutput("barPlot", height = "300px")
+			plotOutput("barPlot", height = "300px"),
+			br(),
+			p("Acknowledgement: Inspired by", 
+				a("https://utrecht-university.shinyapps.io/cj_shiny_sampling/", 
+					href="https://utrecht-university.shinyapps.io/cj_shiny_sampling/", 
+					target="_blank"))
 		)
 	)
 )
