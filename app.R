@@ -54,7 +54,7 @@ There are four ways you can sample:<br>
 <b>Stratified Sampling:</b> ensures each species is proportionally represented by sampling within each species group.<br>
 <b>Cluster Sampling:</b> divides the ocean into spatial quadrants and takes a census within the selected cluster(s).<br>
 <b>Convenience Sampling:</b> samples only from shallower areas accessible with your equipment.<br><br>
-Adjust the sample size or number of clusters, select a sampling method, and click 'SAMPLE' to see how your sample compares to the population.
+Adjust the sample size or number of clusters, select a sampling method, and click SAMPLE to see how your sample compares to the population.
 ")
 		),
 		
@@ -192,7 +192,12 @@ server <- function(input, output, session) {
 			mutate(species_label = paste0(emoji_map[species], " ", species))
 		
 		ggplot(combined, aes(x = species_label, y = n, fill = type)) +
-			geom_bar(stat = "identity", position = position_dodge(width = 0.8), width = 0.7) +
+			geom_bar(stat = "identity", 
+							 position = position_dodge(width = 0.8), 
+							 width = 0.7) +
+			geom_text(aes(label = n), 
+								position = position_dodge(width = 0.8), 
+								hjust = -0.2, size = 5) +   # adjust hjust since you flipped coords
 			coord_flip() +
 			theme_minimal() +
 			theme(
@@ -201,9 +206,11 @@ server <- function(input, output, session) {
 				legend.text = element_text(size = 14),
 				legend.title = element_blank()
 			) +
-			scale_fill_manual(values = c("Population" = "#00C5CD", "Sample" = "#EEAEEE"))
+			scale_fill_manual(values = c("Population" = "#00C5CD", "Sample" = "navy"))
 	})
 }
 
 # ---- Run App ----
 shinyApp(ui, server)
+
+
